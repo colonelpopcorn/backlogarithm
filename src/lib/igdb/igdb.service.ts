@@ -1,6 +1,7 @@
 import { Axios } from "axios";
 import { from, map, Observable, switchMap, tap } from "rxjs";
-import { IgdbGame } from "./igdb-game.interface";
+import { GameFetcher } from "../interfaces/game-fetcher";
+import { IgdbGame } from "../interfaces/igdb-game.interface";
 
 export class IgdbService {
   private readonly TWITCH_CLIENT_ID;

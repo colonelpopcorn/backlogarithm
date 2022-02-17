@@ -12,7 +12,7 @@ describe('GogService', () => {
   });
 
   it('should get a token', async () => {
-    const token = await firstValueFrom(service.getAccessToken());
+    const token = await firstValueFrom(service.authorize());
     expect(token).to.be.ok;
   });
 });

@@ -1,4 +1,5 @@
 import {Command} from '@oclif/core'
+import axios from 'axios'
 import { SteamService } from '../lib/steam/steam.service'
 
 export default class GetGames extends Command {
@@ -24,8 +25,9 @@ Fetched 169 steam games and saved them to steam-games.json!
   private _getServiceFromArgument(serviceName: string): GameFetcher {
       switch(true) {
           case serviceName.toLowerCase() === 'steam':
-              return new SteamService()
-              break;
+              return new SteamService(axios, process.env.STEAM_API_KEY || "");
+          default:
+            return null;
       }
   }
 }

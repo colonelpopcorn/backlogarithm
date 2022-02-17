@@ -1,11 +1,12 @@
 import { Axios } from "axios";
 import { Observable, of, map, from } from "rxjs";
-import { GOGGame } from "./gog-game.interface";
+import { GameFetcher } from "../interfaces/game-fetcher";
+import { GOGGame } from "../interfaces/gog-game.interface";
 
-export class GogService {
+export class GogService implements GameFetcher {
   constructor(private httpService: Axios, private readonly cookie: string) {}
 
-  getAccessToken(): Observable<string> {
+  authorize(): Observable<string> {
     const authUrl = `https://api.gog.com/user/accessToken.json`;
     return from(
       this.httpService.post(authUrl, null, { headers: { Cookie: this.cookie } })
