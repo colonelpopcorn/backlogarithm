@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { expect } from 'chai';
 import { firstValueFrom } from 'rxjs';
-import { IgdbService } from '../../src/lib//igdb/igdb.service';
+import { IgdbService } from '../../src/lib/impls/igdb.service';
 
 
 describe('IgdbService', () => {

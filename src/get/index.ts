@@ -1,6 +1,6 @@
 import {Command} from '@oclif/core'
 import axios from 'axios'
-import { SteamService } from '../lib/steam/steam.service'
+import { SteamService } from '../lib/impls/steam.service'
 
 export default class GetGames extends Command {
   static description = 'Say hello'

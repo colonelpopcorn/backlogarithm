@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { expect } from 'chai';
 import { firstValueFrom } from 'rxjs';
-import { SteamService } from '../../src/lib/steam/steam.service';
+import { SteamService } from '../../src/lib/impls/steam.service';
 
 describe('SteamService', () => {
   let key = process.env.STEAM_API_KEY || "";

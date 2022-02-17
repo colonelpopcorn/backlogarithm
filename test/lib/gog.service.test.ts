@@ -1,4 +1,4 @@
-import { GogService } from '../../src/lib/gog/gog.service';
+import { GogService } from '../../src/lib/impls/gog.service';
 import { firstValueFrom } from 'rxjs';
 import { expect } from 'chai';
 import axios from 'axios';
