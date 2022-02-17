@@ -1,18 +1,18 @@
 import { GogService } from '../../src/lib/gog/gog.service';
 import { firstValueFrom } from 'rxjs';
-import { expect } from 'chai'; mocha from 'mocha';
-
+import { expect } from 'chai';
+import axios from 'axios';
 
 describe('GogService', () => {
-  let service: GogService = new GogService();
+  let cookie = process.env.GOG_COOKIE || "";
+  let service: GogService = new GogService(axios, cookie);
 
   it('should be defined', () => {
-    expect(service).true;
+    expect(service).to.be.ok;
   });
 
   it('should get a token', async () => {
     const token = await firstValueFrom(service.getAccessToken());
-    logger.debug(token);
-    expect(token).toBeTruthy();
+    expect(token).to.be.ok;
   });
 });

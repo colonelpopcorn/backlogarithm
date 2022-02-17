@@ -9,6 +9,7 @@
     "target": "es2019"
   },
   "include": [
-    "src/**/*"
-, "test/lib/steam.service.spec.ts", "test/lib/igdb.service.spec.ts", "test/lib/gog.service.ts", "test/lib/gog.service.spec.ts"  ]
+    "src/**/*",
+    "test/**/*"
+  ]
 }

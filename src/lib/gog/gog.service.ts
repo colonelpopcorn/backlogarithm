@@ -3,17 +3,12 @@ import { Observable, of, map, from } from "rxjs";
 import { GOGGame } from "./gog-game.interface";
 
 export class GogService {
-  private readonly COOKIE;
-
-  constructor(private httpService: Axios) {
-    console.log(process.env);
-    this.COOKIE = process.env.GOG_COOKIE || "";
-  }
+  constructor(private httpService: Axios, private readonly cookie: string) {}
 
   getAccessToken(): Observable<string> {
     const authUrl = `https://api.gog.com/user/accessToken.json`;
     return from(
-      this.httpService.post(authUrl, null, { headers: { Cookie: this.COOKIE } })
+      this.httpService.post(authUrl, null, { headers: { Cookie: this.cookie } })
     ).pipe(map((res) => res.data.accessToken));
   }
 
