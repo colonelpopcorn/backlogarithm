@@ -28,8 +28,8 @@ export interface EpicGame {
 }
 export type Game =
   | GOGGame
-  | SteamGame
   | IgdbGame
+  | SteamGame
   | BattleNetGame
   | UbisoftGame
   | OriginGame
