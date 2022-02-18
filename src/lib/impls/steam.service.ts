@@ -1,7 +1,7 @@
 import { Axios } from "axios";
 import { from, map, Observable, of } from "rxjs";
 import { GameFetcher } from "../interfaces/game-fetcher";
-import { SteamGame } from "../interfaces/steam-game.interface";
+import { SteamGame } from "../interfaces/game-types";
 
 export class SteamService implements GameFetcher {
   private readonly STEAM_API_KEY: string;

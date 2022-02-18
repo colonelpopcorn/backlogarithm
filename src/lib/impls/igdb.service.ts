@@ -1,9 +1,9 @@
 import { Axios } from "axios";
 import { from, map, Observable, switchMap, tap } from "rxjs";
 import { GameFetcher } from "../interfaces/game-fetcher";
-import { IgdbGame } from "../interfaces/igdb-game.interface";
+import { Game } from "../interfaces/game-types";
 
-export class IgdbService {
+export class IgdbService implements GameFetcher {
   private readonly TWITCH_CLIENT_ID;
   private readonly TWITCH_CLIENT_SECRET;
 
@@ -39,5 +39,9 @@ export class IgdbService {
         ).pipe(map((res) => res.data));
       })
     );
+  }
+
+  getOwnedGames(): Observable<Game[]> {
+    throw new Error("Method not implemented.");
   }
 }
