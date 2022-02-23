@@ -13,6 +13,10 @@ export class SteamService implements GameFetcher {
     this.STEAM_API_KEY = apiKey;
   }
 
+  setAccessToken(_: string): void {
+      
+  }
+
   authorize(): Observable<String> {
     return of(this.apiKey);
   }

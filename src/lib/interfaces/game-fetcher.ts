@@ -4,5 +4,6 @@ import { Game } from "./game-types";
 export interface GameFetcher {
     authorize(): Observable<String>;
     getOwnedGames(): Observable<Game[]>
+    setAccessToken(token: string): void
 };
 
