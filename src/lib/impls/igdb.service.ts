@@ -1,5 +1,5 @@
 import { Axios } from "axios";
-import { from, map, Observable, switchMap, tap } from "rxjs";
+import { filter, from, map, Observable, switchMap, tap } from "rxjs";
 import { GameFetcher } from "../interfaces/game-fetcher";
 import { Game } from "../interfaces/game-types";
 
@@ -7,9 +7,15 @@ export class IgdbService implements GameFetcher {
   private readonly TWITCH_CLIENT_ID;
   private readonly TWITCH_CLIENT_SECRET;
 
-  constructor(private httpService: Axios, private twitchCredentials: {clientId: string, clientSecret: string}) {
+  constructor(
+    private httpService: Axios,
+    private twitchCredentials: { clientId: string; clientSecret: string }
+  ) {
     this.TWITCH_CLIENT_ID = twitchCredentials.clientId;
     this.TWITCH_CLIENT_SECRET = twitchCredentials.clientSecret;
+  }
+  setAccessToken(token: string): void {
+    throw new Error("Method not implemented.");
   }
 
   authorize(): Observable<string> {
@@ -36,7 +42,14 @@ export class IgdbService implements GameFetcher {
               headers,
             }
           )
-        ).pipe(map((res) => res.data));
+        ).pipe(
+          map((res) =>
+            res.data.find((el: any) => {
+              console.log(el);
+              return el.name === gameName;
+            })
+          )
+        );
       })
     );
   }

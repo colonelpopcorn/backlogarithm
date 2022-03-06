@@ -18,11 +18,14 @@ export class GogService implements GameFetcher {
   }
 
   getOwnedGames(): Observable<GOGGame[]> {
-    const someUrl = "" + this.token;
-    return of([{}]);
-  }
-
-  private getOwnedGameIds(): Observable<number[]> {
-    return of([]);
+    const someUrl = "https://gog.com/account/getFilteredProducts?mediaType=1";
+    return from(
+      this.httpService.post(someUrl, null, { headers: { Cookie: this.cookie } })
+    ).pipe(
+      map((res) => {
+        console.log(res.data);
+        return res.data;
+      })
+    );
   }
 }
