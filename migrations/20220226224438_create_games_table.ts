@@ -6,11 +6,19 @@ const TABLE_NAME = 'games';
 export async function up(knex: Knex): Promise<void> {
     await knex.schema.createTableIfNotExists(TABLE_NAME, (tableBuilder) => {
         tableBuilder.bigIncrements('game_id').primary().notNullable();
+        tableBuilder.bigInteger('igdb_game_id').notNullable().defaultTo(0);
         tableBuilder.string('game_name').notNullable().defaultTo('');
-        tableBuilder.integer('critic_rating').notNullable().defaultTo(0)
-        tableBuilder.integer('community_rating').notNullable().defaultTo(0);
         tableBuilder.date('release_date').notNullable().defaultTo(knex.fn.now());
+        tableBuilder.integer('critic_rating').notNullable().defaultTo(0);
+        tableBuilder.integer('community_rating').notNullable().defaultTo(0);
+        tableBuilder.string('owned_status').notNullable().defaultTo('Owned')
+        tableBuilder.string('played_status').notNullable().defaultTo('Unplayed');
+        tableBuilder.string('completed_status').notNullable().defaultTo('Uncompleted');
+        tableBuilder.integer('minutes_played').notNullable().defaultTo(0);
+        tableBuilder.string('tier_ranking').notNullable().defaultTo('F');
+        tableBuilder.string('genre').notNullable().defaultTo('');
         tableBuilder.integer('how_long_to_beat_min').notNullable().defaultTo(0);
+        tableBuilder.integer('how_long_to_beat_mid').notNullable().defaultTo(0);
         tableBuilder.integer('how_long_to_beat_max').notNullable().defaultTo(0);
     })
 }
