@@ -6,6 +6,8 @@ const TABLE_NAME = 'games';
 export async function up(knex: Knex): Promise<void> {
     await knex.schema.createTableIfNotExists(TABLE_NAME, (tableBuilder) => {
         tableBuilder.bigIncrements('game_id').primary().notNullable();
+        tableBuilder.bigInteger('store_id').nullable();
+        tableBuilder.string('store_front').nullable();
         tableBuilder.bigInteger('igdb_game_id').notNullable().defaultTo(0);
         tableBuilder.string('game_name').notNullable().defaultTo('');
         tableBuilder.date('release_date').notNullable().defaultTo(knex.fn.now());
