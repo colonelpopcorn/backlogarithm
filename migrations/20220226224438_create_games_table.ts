@@ -19,9 +19,9 @@ export async function up(knex: Knex): Promise<void> {
         tableBuilder.integer('minutes_played').notNullable().defaultTo(0);
         tableBuilder.string('tier_ranking').notNullable().defaultTo('F');
         tableBuilder.string('genre').notNullable().defaultTo('');
-        tableBuilder.integer('how_long_to_beat_min').notNullable().defaultTo(0);
-        tableBuilder.integer('how_long_to_beat_mid').notNullable().defaultTo(0);
-        tableBuilder.integer('how_long_to_beat_max').notNullable().defaultTo(0);
+        tableBuilder.float('how_long_to_beat_min').notNullable().defaultTo(0);
+        tableBuilder.float('how_long_to_beat_mid').notNullable().defaultTo(0);
+        tableBuilder.float('how_long_to_beat_max').notNullable().defaultTo(0);
     })
 }
 

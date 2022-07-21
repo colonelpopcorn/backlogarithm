@@ -1,5 +1,6 @@
 import axios, { Axios } from "axios";
-import axiosRetry from "axios-retry";
+import { HowLongToBeatService, HowLongToBeatEntry } from "howlongtobeat";
+import Knex from "knex";
 import { writeFileSync } from "fs";
 import {
   concatAll,
@@ -18,11 +19,13 @@ import {
   throwError,
   timer,
 } from "rxjs";
+const config = require("./knexfile");
 
+type StoreFront = "Steam" | "GOG" | "ORIGIN" | "EPIC" | "BATTLENET" | "UBISOFT";
 interface Game {
   name: string;
   storeId?: string;
-  storeFront?: "Steam" | "GOG" | "ORIGIN" | "EPIC" | "BATTLENET" | "UBISOFT";
+  storeFront?: StoreFront;
   timePlayedInMinutes?: number;
   igdbGameId?: string;
   releaseDate?: number;
@@ -39,6 +42,7 @@ interface Game {
   howLongToBeatMax?: number;
 }
 
+const nonASCIIPattern = /[^\x00-\x7F]+\ *(?:[^\x00-\x7F]| )*/g;
 class IgdbService {
   private readonly TWITCH_CLIENT_ID;
   private readonly TWITCH_CLIENT_SECRET;
@@ -112,13 +116,51 @@ class IgdbService {
       Authorization: `Bearer ${this.token}`,
       Accept: "application/json",
     };
+    const gameNameSearchTerm = (game.name as any).replaceAll(
+      nonASCIIPattern,
+      ""
+    );
     return from(
       this.httpService.post(
         twitchApiUrl,
-        `search "${game.name}"; fields id,aggregated_rating,genres,name,rating,first_release_date;`,
+        `search "${gameNameSearchTerm}"; fields id,aggregated_rating,genres,name,rating,first_release_date;`,
         {
           headers,
         }
+      )
+    );
+  }
+
+  getGenres(genreIds: string[]): Observable<any> {
+    const twitchApiUrl = "https://api.igdb.com/v4/genres";
+    const headers = {
+      "Client-ID": this.TWITCH_CLIENT_ID,
+      Authorization: `Bearer ${this.token}`,
+      Accept: "application/json",
+    };
+    return from(
+      this.httpService.post(
+        twitchApiUrl,
+        `where id = (${genreIds.reduce(
+          (prev, curr, index) =>
+            index === genreIds.length - 1 || index === 0
+              ? prev + curr
+              : prev + ", " + curr,
+          ""
+        )}); fields name;`,
+        {
+          headers,
+        }
+      )
+    ).pipe(
+      map(({ data }) =>
+        data.reduce(
+          (prev: any, curr: any, index: number) =>
+            index === data.length - 1
+              ? prev.name + curr.name
+              : prev.name + ", " + curr.name,
+          { name: "" }
+        )
       )
     );
   }
@@ -275,67 +317,159 @@ function fetchDataForGamesFromIGDB(allGames: Game[]) {
   );
 }
 
-// new Promise<void>(async (resolve) => {
-//   console.log("Fetching games from Steam...");
-//   const steamGames = await lastValueFrom(fetchGamesFromSteam());
-//   console.log("Writing Steam games to disk...");
-//   writeFileSync(
-//     "./workbench/steam_games.json",
-//     JSON.stringify(steamGames, null, 2)
-//   );
-//   console.log("Fetching games from GOG...");
-//   const gogGames = await lastValueFrom(fetchGamesFromGog());
-//   console.log("Writing GOG games to disk...");
-//   writeFileSync(
-//     "./workbench/gog_games.json",
-//     JSON.stringify(gogGames, null, 2)
-//   );
-//   console.log("Fetching game data from IGDB...");
-//   const allGames = steamGames
-//     .concat(gogGames)
-//     .filter((game) => game.name !== undefined);
-//   const igdbData = await fetchDataForGamesFromIGDB(allGames);
-//   writeFileSync(
-//     "./workbench/igdb_games.json",
-//     JSON.stringify(igdbData, null, 2)
-//   );
-//   resolve();
-// }).then(() => console.log("Done!"));
+const hltbService = new HowLongToBeatService();
 
-new Promise<void>(async (resolve) => {
-  const allGames = require("./workbench/steam_games.json")
-    .concat(require("./workbench/gog_games.json"))
-    .filter((game: any) => game.name !== undefined);
-  const igdbService = getIgdbService();
-  await lastValueFrom(
-    igdbService
-      .authorize()
-      .pipe(tap((token) => igdbService.setAccessToken(token)))
-  );
+const fetchAndWriteSteamGames = () =>
+  new Promise<void>(async (resolve) => {
+    console.log("Fetching games from Steam...");
+    const steamGames = await lastValueFrom(fetchGamesFromSteam());
+    console.log("Writing Steam games to disk...");
+    writeFileSync(
+      "./workbench/steam_games.json",
+      JSON.stringify(steamGames, null, 2)
+    );
+    resolve();
+  });
+const fetchAndWriteGogGames = () =>
+  new Promise<void>(async (resolve) => {
+    console.log("Fetching games from GOG...");
+    const gogGames = await lastValueFrom(fetchGamesFromGog());
+    console.log("Writing GOG games to disk...");
+    writeFileSync(
+      "./workbench/gog_games.json",
+      JSON.stringify(gogGames, null, 2)
+    );
+    resolve();
+  });
 
-  const newAllGames = [];
-
-  for (const game of allGames) {
-    const res = await lastValueFrom(igdbService.searchByGameNameV2(game));
-    if (res.error) {
-      console.log("Booo");
-      console.log(res.error);
-    } else {
-      const newGame = res.data.filter(
-        (igdbGame: any) =>
-          igdbGame.name.length === game.name.length &&
-          game.name.includes(igdbGame.name)
-      ).map((newIgdb: any) => ({...newIgdb, ...game}))[0];
-      newAllGames.push(newGame === null || newGame === undefined ? game : newGame);
+const insertFromFiles = (...filePaths: string[]) =>
+  new Promise<void>(async (resolve) => {
+    const initialGames = [];
+    for (const filePath of filePaths) {
+      const content = require(filePath);
+      initialGames.push(content);
     }
-  }
-  // const allGamesFromIgdb = await lastValueFrom(
-  //   fetchDataForGamesFromIGDB(allGames)
-  // );
-  writeFileSync(
-    "./workbench/igdb_games.json",
-    JSON.stringify(newAllGames, null, 2)
-  );
-  // resolve();
-  resolve();
-}).then(() => console.log("Done!"));
+    console.log(initialGames);
+    const allGames = initialGames
+      .flat()
+      .filter((game: any) => game.name !== undefined);
+    console.log(allGames);
+    const igdbService = getIgdbService();
+    await lastValueFrom(
+      igdbService
+        .authorize()
+        .pipe(tap((token) => igdbService.setAccessToken(token)))
+    );
+
+    const knex = Knex(config.development);
+    const gamesThatDidntMakeIt = [];
+
+    for (const game of allGames) {
+      const res = await lastValueFrom(igdbService.searchByGameNameV2(game));
+      if (res.error) {
+        console.log("Booo");
+        console.log(res.error);
+      } else {
+        const newGame =
+          res.data.length === 1
+            ? { ...game, ...res.data[0] }
+            : res.data
+                .filter((igdbGame: any) => {
+                  const gameNameSearchTerm =
+                    game.name.replaceAll(nonASCIIPattern);
+                  const incomingGameName = igdbGame.name.replaceAll(
+                    nonASCIIPattern,
+                    ""
+                  );
+                  console.log(
+                    `${gameNameSearchTerm} does not match ${incomingGameName}`
+                  );
+                  return (
+                    gameNameSearchTerm.length === incomingGameName.length &&
+                    incomingGameName.includes(gameNameSearchTerm)
+                  );
+                })
+                .map((newIgdb: any) => ({ ...newIgdb, ...game }))[0];
+        let genreString = "";
+        try {
+          if (newGame.genres) {
+            genreString = await lastValueFrom(
+              igdbService.getGenres(newGame.genres)
+            );
+          }
+          const hltbData = await hltbService.search(game.name);
+          const result = hltbData.sort((a, b) => b.similarity - a.similarity);
+          const releaseDate = newGame.first_release_date
+            ? new Date(newGame.first_release_date * 1000)
+            : new Date("01 Jan 1970 00:00:00 GMT");
+          const insertObj = {
+            game_name: newGame.name,
+            store_id: newGame.storeId,
+            store_front: newGame.storeFront,
+            igdb_game_id: newGame.id,
+            release_date: releaseDate,
+            critic_rating: Math.floor(newGame.aggregated_rating || 0),
+            community_rating: Math.floor(newGame.rating || 0),
+            minutes_played: newGame.timePlayedInMinutes,
+            genre: genreString,
+            how_long_to_beat_min: result[0] ? result[0].gameplayMain : 0,
+            how_long_to_beat_mid: result[0] ? result[0].gameplayMainExtra : 0,
+            how_long_to_beat_max: result[0]
+              ? result[0].gameplayCompletionist
+              : 0,
+          };
+          console.log(insertObj);
+          await knex("games").insert(insertObj);
+        } catch (e) {
+          console.log(e);
+          gamesThatDidntMakeIt.push(game);
+        }
+      }
+    }
+    writeFileSync(
+      "./workbench/games_that_didnt_make_it.json",
+      JSON.stringify(gamesThatDidntMakeIt, null, 2)
+    );
+    resolve();
+  }).then(() => console.log("Done!"));
+
+const fetchGamesNotInDb = (storeFront: StoreFront) =>
+  new Promise<void>(async (resolve) => {
+    const fileName =
+      storeFront === "Steam"
+        ? "./workbench/steam_games.json"
+        : storeFront === "GOG"
+        ? "./workbench/gog_games.json"
+        : new Error("not implemented yet!");
+    if (typeof fileName !== "string") {
+      throw fileName;
+    }
+    const rawGames = require(fileName);
+    const knex = Knex(config.development);
+    const games = await knex("games")
+      .select("store_id")
+      .where("store_front", storeFront);
+    const gamesInDb = games.map((x) => x.store_id);
+    let gamesNotInDb = rawGames.filter(
+      (game: Game) =>
+        gamesInDb.indexOf(
+          game.storeId === undefined ? "" : game.storeId.toString()
+        ) === -1
+    );
+    const newFileName = fileName.replace(".json", "_that_didnt_make_it.json");
+    writeFileSync(newFileName, JSON.stringify(gamesNotInDb, null, 2));
+    resolve();
+    return;
+  });
+
+  const someFunc = () => new Promise(resolve => setTimeout(resolve, 4000))
+
+// fetchAndWriteSteamGames().then(() => console.log("done"));
+// fetchGamesNotInDb("GOG").then(() => console.log("done"));
+// fetchGamesNotInDb("Steam").then(() => console.log("done"));
+// console.log("Derp");
+// someFunc().then(() => console.log("Derp is done."))
+// insertFromFiles(
+//   "./workbench/gog_games_that_didnt_make_it.json",
+//   "./workbench/steam_games_that_didnt_make_it.json"
+// ).then(() => console.log("done"));
